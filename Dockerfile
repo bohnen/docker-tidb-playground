@@ -1,5 +1,5 @@
 FROM debian:bookworm-slim
-ARG TIDB_VERSION=v8.5.2
+ARG TIDB_VERSION=v8.5.6
 
 # Install runtime dependencies
 RUN apt-get update && \
