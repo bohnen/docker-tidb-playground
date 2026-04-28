@@ -13,7 +13,7 @@ timeout=120
 elapsed=0
 
 while [ $elapsed -lt $timeout ]; do
-    if curl -s -o /dev/null -w "%{http_code}" localhost:10080 | grep -q "200"; then
+    if mysql --connect-timeout=1 -h 127.0.0.1 -u root -P 4000 -e "SELECT 1" >/dev/null 2>&1; then
         echo "TiDB is ready!"
         break
     fi
