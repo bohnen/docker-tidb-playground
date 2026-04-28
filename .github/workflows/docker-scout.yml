@@ -67,3 +67,4 @@ jobs:
           only-severities: critical,high
           exit-code: true
           summary: true
+          write-comment: false
