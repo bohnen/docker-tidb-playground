@@ -1,9 +1,9 @@
 FROM debian:bookworm-slim
 ARG TIDB_VERSION=v8.5.2
 
-# Install curl
+# Install runtime dependencies
 RUN apt-get update && \
-    apt-get install -y curl default-mysql-client-core && \
+    apt-get install -y --no-install-recommends ca-certificates curl default-mysql-client-core && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

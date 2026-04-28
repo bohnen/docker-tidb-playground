@@ -2,9 +2,9 @@
 
 # Start tiup playground in background
 if [ -n "$UNISTORE" ]; then
-    /root/.tiup/components/tidb/$TIDB_VERSION/tidb-server &
+    "$HOME/.tiup/components/tidb/$TIDB_VERSION/tidb-server" &
 else
-    tiup playground --host "0.0.0.0" --db 1 --pd 1 --kv 1 --tiflash 0 --without-monitor &
+    tiup playground "$TIDB_VERSION" --host "0.0.0.0" --db 1 --pd 1 --kv 1 --tiflash 0 --without-monitor &
 fi
 
 # Wait for TiDB to be ready (max 30 seconds)
