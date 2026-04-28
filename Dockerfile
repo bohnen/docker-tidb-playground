@@ -2,29 +2,42 @@ FROM debian:bookworm-slim
 ARG TIDB_VERSION=v8.5.6
 
 # Add tiup to PATH
-ENV PATH="/root/.tiup/bin:${PATH}"
+ENV HOME="/home/tidb"
+ENV PATH="/home/tidb/.tiup/bin:${PATH}"
 
-# Install TiDB and keep only runtime dependencies
+# Install build-time tools and runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates curl default-mysql-client-core && \
-    curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh && \
-    tiup install playground tidb:${TIDB_VERSION} pd:${TIDB_VERSION} tikv:${TIDB_VERSION} && \
-    apt-get purge -y --auto-remove curl && \
+    useradd --create-home --shell /bin/bash tidb && \
+    chown -R tidb:tidb /home/tidb && \
+    mkdir -p /sql && \
+    chmod 755 /sql && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Create sql directory
-RUN mkdir -p /sql
+USER tidb
+WORKDIR /home/tidb
 
-COPY start.sh /root/start.sh
-RUN chmod +x /root/start.sh
+# Install TiDB components as the runtime user
+RUN curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh && \
+    tiup install playground tidb:${TIDB_VERSION} pd:${TIDB_VERSION} tikv:${TIDB_VERSION}
 
-# Expose TiDB port
-EXPOSE 4000 2379
+USER root
+
+# Keep curl out of the runtime image
+RUN apt-get purge -y --auto-remove curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --chown=tidb:tidb start.sh /home/tidb/start.sh
+COPY --chown=tidb:tidb tidb.toml /home/tidb/tidb.toml
+RUN chmod +x /home/tidb/start.sh
+
+# Expose TiDB SQL port only
+EXPOSE 4000
 
 # Set environment variable for TIDB_VERSION
 ENV TIDB_VERSION=${TIDB_VERSION}
 
-# Set the working directory
-WORKDIR /root
-CMD ["/root/start.sh"]
+USER tidb
+CMD ["/home/tidb/start.sh"]
