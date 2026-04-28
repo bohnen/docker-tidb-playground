@@ -2,9 +2,9 @@
 
 # Start tiup playground in background
 if [ -n "$UNISTORE" ]; then
-    /root/.tiup/components/tidb/$TIDB_VERSION/tidb-server &
+    "$HOME/.tiup/components/tidb/$TIDB_VERSION/tidb-server" &
 else
-    tiup playground --host "0.0.0.0" --db 1 --pd 1 --kv 1 --tiflash 0 --without-monitor &
+    tiup playground "$TIDB_VERSION" --host "0.0.0.0" --db 1 --pd 1 --kv 1 --tiflash 0 --without-monitor &
 fi
 
 # Wait for TiDB to be ready (max 30 seconds)
@@ -13,7 +13,7 @@ timeout=120
 elapsed=0
 
 while [ $elapsed -lt $timeout ]; do
-    if curl -s -o /dev/null -w "%{http_code}" localhost:10080 | grep -q "200"; then
+    if mysql --connect-timeout=1 -h 127.0.0.1 -u root -P 4000 -e "SELECT 1" >/dev/null 2>&1; then
         echo "TiDB is ready!"
         break
     fi

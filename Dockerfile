@@ -1,20 +1,17 @@
 FROM debian:bookworm-slim
-ARG TIDB_VERSION=v8.5.2
-
-# Install curl
-RUN apt-get update && \
-    apt-get install -y curl default-mysql-client-core && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install tiup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh
+ARG TIDB_VERSION=v8.5.6
 
 # Add tiup to PATH
 ENV PATH="/root/.tiup/bin:${PATH}"
 
-# Install TiDB
-RUN tiup install playground tidb:${TIDB_VERSION} pd:${TIDB_VERSION} tikv:${TIDB_VERSION}
+# Install TiDB and keep only runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl default-mysql-client-core && \
+    curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh && \
+    tiup install playground tidb:${TIDB_VERSION} pd:${TIDB_VERSION} tikv:${TIDB_VERSION} && \
+    apt-get purge -y --auto-remove curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create sql directory
 RUN mkdir -p /sql

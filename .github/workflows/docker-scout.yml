@@ -1,0 +1,70 @@
+name: Docker Scout
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - start.sh
+      - .dockerignore
+      - .github/workflows/docker-scout.yml
+  push:
+    branches:
+      - main
+    paths:
+      - Dockerfile
+      - start.sh
+      - .dockerignore
+      - .github/workflows/docker-scout.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: docker-tidb-playground
+  IMAGE_TAG: scout-ci
+  DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+  DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+jobs:
+  docker-scout:
+    name: Build and scan image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Check Docker Hub credentials
+        if: ${{ env.DOCKERHUB_USERNAME == '' || env.DOCKERHUB_TOKEN == '' }}
+        run: |
+          echo "::error::Set repository variable DOCKERHUB_USERNAME and secret DOCKERHUB_TOKEN to run Docker Scout."
+          exit 1
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan for critical and high CVEs
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          only-severities: critical,high
+          exit-code: true
+          summary: true
+          write-comment: false
